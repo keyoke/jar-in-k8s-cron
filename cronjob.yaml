@@ -3,12 +3,35 @@ kind: CronJob
 metadata:
   name: cron-job-test
 spec:
-  schedule: "*/1 * * * *"
+  schedule: "*/5 * * * *"
   jobTemplate:
     spec:
       template:
         spec:
+          volumes:
+          - name: shared-ai-agent
+            emptyDir: {}
+          initContainers:
+          - name: ai-init-container
+            image: [Docker Image Registry URL]/ai-init-container
+            resources:
+              requests:
+                cpu: 250m
+              limits:
+                cpu: 500m
+                memory: 250Mi
+            volumeMounts:
+            - name: shared-ai-agent
+              mountPath: /shared-ai-agent/    
           containers:
           - name: cron-job-test
-            image: mehdihasan/jar-in-cron:latest
+            image: [Docker Image Registry URL]/jar-in-cron:latest
+            env:
+              - name: APPLICATIONINSIGHTS_CONNECTION_STRING
+                value: "[AppInsights IKEY]"
+              - name: _JAVA_OPTIONS
+                value: "-javaagent:/shared-ai-agent/applicationinsights-agent.jar -DapplicationInsights.configurationFile=/shared-ai-agent/ApplicationInsights.json"
+            volumeMounts:
+            - name: shared-ai-agent
+              mountPath: /shared-ai-agent/
           restartPolicy: Never
